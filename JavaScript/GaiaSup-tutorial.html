@@ -1,0 +1,165 @@
+
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<script src="jquery-1.7.2.min.js" charset="utf-8"></script>
+<script type="text/javascript" src="GaiaSup.js"></script>
+<script type="text/javascript">
+<!--        
+
+    //
+    // Config parameters
+    //
+    
+    // the height and width of the current coordinate space
+    var bound = {x: 800, y: 600};
+                                                       
+    // how much pixels to move when keys are pressed
+    var delta = 5; 
+                                
+    // set info about current node
+    var self = {x:      Math.floor(Math.random() * bound.x), 
+                y:      Math.floor(Math.random() * bound.y),
+                radius: 200,
+                name:   "node_" + new Date().getTime()};
+                              
+    // perform action only after page is loaded
+    document.addEventListener ("DOMContentLoaded", function () {
+    
+        //
+        // User Interaction / Page Manipulation code
+        //    
+    
+        // reference to input/output fields
+        var in_area  = document.getElementById("in_area");
+        var out_area = document.getElementById("out_area");
+        
+        // update input field with a node info
+        function updateInput (node) {
+            in_area.value = node.name + ' (' + node.x + ', ' + node.y + ')';             
+        }
+        
+        // update output field with a message
+        function updateOutput (msg) {
+            out_area.value += (msg + '\n')
+            out_area.scrollTop = out_area.scrollHeight; 
+        }        
+    
+        // display initial input values
+        updateInput(self);
+       
+        // handle keypress events to do node movement with bound checks
+        function doKeyDown(event){
+        
+            switch (event.keyCode) {
+                // Up arrow was pressed
+                case 38:  
+                    if (self.y - delta > 0)
+                        self.y -= delta;
+                    break;
+                // Down arrow was pressed 
+                case 40:  
+            		if (self.y + delta < bound.y)
+                        self.y += delta;
+                    break;
+                // Left arrow was pressed 
+                case 37:  
+            		if (self.x - delta > 0)
+                        self.x -= delta;
+                    break;
+                // Right arrow was pressed
+                case 39:  
+            		if (self.x + delta < bound.x)
+                        self.x += delta;
+                    break;
+                    
+                default:
+                    // do nothing
+                    return;                    
+            }   
+                        
+            // publish position change
+            node.publish({
+                pos: [self.x, self.y, 0]            
+            });                         
+                        
+            // update input content
+            updateInput(self);
+        }
+              
+        // register for keyboard events
+        window.addEventListener("keydown", doKeyDown, true);
+
+		//
+		// initialize GaiaSup Node
+		//
+                        
+        // callback when neighbor positions are updated
+        var positionCallback = function (node_list) {
+            
+            // print neighbor info
+            updateOutput('\n' + Object.keys(node_list).length + ' neighbors:');
+            for (var ident in node_list)
+                updateOutput('ident: ' + ident + ' (' + node_list[ident].x + ', ' + 
+                                                        node_list[ident].y + ', ' + 
+                                                        node_list[ident].z + ')');
+        }
+        
+        // callback when a message is received
+        var messageCallback = function (msg_list) {
+        
+            // print out message list
+            for (var i=0; i < msg_list.length; i++) {
+                var msg = msg_list[i];
+                updateOutput(msg.ident + ': ' + msg.msg);
+            }
+        }
+
+        // callback when initialization is done
+        var doneCallback = function () {
+        
+            node.publish({
+                pos: [self.x, self.y, 0]            
+            }, 
+             
+            // once done, perform subscribe nearby
+            function () {                
+                // perform subscribe nearby
+                node.subscribe({            
+                    radius:     self.radius
+                });
+            });        
+        }
+        
+        // create a GaiaSup node 
+        var node = new GAIASUP.node();
+        
+		// init with layer & node name
+        node.init(
+            {
+                apikey:     "52249ae526761f994ed197e9ca415bf4d993134b",
+                layer:      "default",
+                name:       self.name,
+                pos_CB:     positionCallback,
+                msg_CB:     messageCallback
+            },           
+            doneCallback
+        );       
+    });
+                                       
+// -->
+</script>
+</head>
+
+<body>
+<!-- output -->
+output:
+<textarea id="out_area" rows="20" cols="100">
+</textarea> 
+<br />
+<!-- input -->
+input: <input id="in_area" type="text" value="" size="100" maxlength="100"/>
+
+</body>
+</html>

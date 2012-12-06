@@ -1,0 +1,313 @@
+
+Basic Introduction
+==================
+GaiaSup is a third party "spatial engine" that helps developers to easily build
+locatino-based services (LBS) or geo/spatial applications. It deploys
+a common and well-known messaging paradigm called publish / subscribe (pub/sub)
+but adds explicit support for spatial data. At its core, GaiaSup
+allows developers to store and retrive spatial coordinates, which is all done
+by an in-memory spatial database, so that the data can be processed and retrieved quickly.
+
+Besides pub/sub, GaiaSup also allows the more traditional store/query approach to
+spatial coordinates. Once some coordinates are published, the latest coordinates info
+are also stored by GaiaSup, so that a query can be performed at any later time for
+the previously published data.
+
+In addition to coordinate data (x, y, z), GaiaSup also supports the spatial pub/sub
+for string-based messages and developer-defined data, which can be anything
+representable by an JSON object. Coordinates, strings, and JSON objects thus are
+the three main data types GaiaSup supports.
+
+To access GaiaSup, we provide both a standard RESTful API interface (which a developer
+can access directly using HTTP GET/POST/DELETE actions), as well as language-specific
+bindings that are designed to ease the development efforts. Here we provide a tutorial
+based on the JavaScript language binding. However, the principles and procedures are
+applicable to other language bindings.
+
+
+How to Use GaiaSup
+==================
+
+It is very easy to start using GaiaSup with the Javascript language binding.
+Once you have created your account and a project, you will be given an "API key"
+that is used to uniquely identify your application.
+
+To use GaiaSup, the three main steps are:
+
+1. Initialize a Node
+
+    The first step you need to take is to create a 'node'. A node is basically a
+    representation in a particular 'layer' within your registered spatial application.
+
+    Your spatial application can be an online game or something that runs on the mobile phone.
+    All the 'layers' reside on the same coordinate space for a given app, but they do not
+    interfere with each other. So for example, you could have one layer to store all the
+    positions of your users for a mobile application, and another layer to store the info
+    about the restaurants your want to allow your users to query. Any publish or subscribe
+    actions at a given layer do not interfere with the pub/sub at other layers.
+
+    Each node also has a 'name', which is provided by your application, each node thus
+    can be uniquely identified by a string in the format of "apikey:layer:name", which
+    is called an 'ident'.
+
+    To create a node, you can use the following code, but filled with your own apikey, layer, and name,
+    plus two optional callback functions. In the following sample code, we assume that 
+    there's a 'self' object that contains the node name, and x, y, z coordinates for a user. 
+    
+        // create a GaiaSup node
+        var node = new GAIASUP.node();
+
+        // init with layer & node name
+        node.init(
+            {
+                apikey:     "52249ae526761f994ed197e9ca415bf4d993134b",
+                layer:      "default",
+                name:       self.name,
+                pos_CB:     positionCallback,
+                msg_CB:     messageCallback
+            },
+            doneCallback
+        );
+
+    For the callbacks, 'positionCallback' is called whenever neighboring nodes within your subscribed area(s)
+    have updated their positions. We provide a sample below:
+
+        // callback when neighbor positions are updated
+        var positionCallback = function (node_list) {
+
+            // print neighbor info
+            updateOutput('\n' + Object.keys(node_list).length + ' neighbors:');
+            for (var ident in node_list)
+                updateOutput('ident: ' + ident + ' (' + node_list[ident].x + ', ' +
+                                                        node_list[ident].y + ', ' +
+                                                        node_list[ident].z + ')');
+        }
+
+    'messageCallback', on the other hand, is invoked whenever nodes within your subscribed area(s) have
+    published a string message, and a sample callback may look like this:
+
+        // callback when a message is received
+        var messageCallback = function (msg_list) {
+
+            // print out message list
+            for (var i=0; i < msg_list.length; i++) {
+                var msg = msg_list[i];
+                updateOutput(msg.ident + ': ' + msg.msg);
+            }
+        }
+
+    Optionally, you can also provide another callback to notify when init is done, this is provided
+    after the init parameters.
+
+2. Subscribe Nearby Updates
+
+    The second step you need to do after initialization is done is to subscribe to some area near your node.
+    You will first need to publish your position once, before performing a subscription
+    of nearby radius:
+
+        // callback when initialization is done
+        var doneCallback = function () {
+
+            node.publish({
+                pos: [self.x, self.y, 0]
+            },
+
+            // once done, perform subscribe nearby
+            function () {
+                // perform subscribe nearby
+                node.subscribe({
+                    radius:     self.radius
+                });
+            });
+        }
+
+    Note that in the above sample code, we perform the subscription within the
+    callback once node initialization is done. But you're free to put it anywhere
+    else for the purpose to perform a basic subscription.
+
+3. Publish Your Positions
+
+    Once we have subscribed successfully, we can simply start to update our node
+    positions whenever it occurs. Whether your node changes its position via GPS
+    tracking or user input. You can use the following code to update:
+
+            // publish position change
+            node.publish({
+                pos: [self.x, self.y, 0]
+            });
+
+    In this case, self contains the x and y coordinate of the updated coordinates.
+
+4. Wrapp It All Up
+
+    So to make it all work, we build a simple HTML page where you can see
+    how the change in node position (controlled by a user moving UP/DOWN/LEFT/RIGHT
+    arrows) is published via GaiaSup, and how you can learn of neighboring nodes'
+    'ident' and their positions:
+
+
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<script src="jquery-1.7.2.min.js" charset="utf-8"></script>
+<script type="text/javascript" src="GaiaSup.js"></script>
+<script type="text/javascript">
+<!--
+
+    //
+    // Config parameters
+    //
+
+    // the height and width of the current coordinate space
+    var bound = {x: 800, y: 600};
+
+    // how much pixels to move when keys are pressed
+    var delta = 5;
+
+    // set info about current node
+    var self = {x:      Math.floor(Math.random() * bound.x),
+                y:      Math.floor(Math.random() * bound.y),
+                radius: 200,
+                name:   "node_" + new Date().getTime()};
+
+    // perform action only after page is loaded
+    document.addEventListener ("DOMContentLoaded", function () {
+
+        //
+        // User Interaction / Page Manipulation code
+        //
+
+        // reference to input/output fields
+        var in_area  = document.getElementById("in_area");
+        var out_area = document.getElementById("out_area");
+
+        // update input field with a node info
+        function updateInput (node) {
+            in_area.value = node.name + ' (' + node.x + ', ' + node.y + ')';
+        }
+
+        // update output field with a message
+        function updateOutput (msg) {
+            out_area.value += (msg + '\n')
+            out_area.scrollTop = out_area.scrollHeight;
+        }
+
+        // display initial input values
+        updateInput(self);
+
+        // handle keypress events to do node movement with bound checks
+        function doKeyDown(event){
+
+            switch (event.keyCode) {
+                // Up arrow was pressed
+                case 38:
+                    if (self.y - delta > 0)
+                        self.y -= delta;
+                    break;
+                // Down arrow was pressed
+                case 40:
+                    if (self.y + delta < bound.y)
+                        self.y += delta;
+                    break;
+                // Left arrow was pressed
+                case 37:
+                    if (self.x - delta > 0)
+                        self.x -= delta;
+                    break;
+                // Right arrow was pressed
+                case 39:
+                    if (self.x + delta < bound.x)
+                        self.x += delta;
+                    break;
+
+                default:
+                    // do nothing
+                    return;
+            }
+
+            // publish position change
+            node.publish({
+                pos: [self.x, self.y, 0]
+            });
+
+            // update input content
+            updateInput(self);
+        }
+
+        // register for keyboard events
+        window.addEventListener("keydown", doKeyDown, true);
+
+        //
+        // initialize GaiaSup Node
+        //
+
+        // callback when neighbor positions are updated
+        var positionCallback = function (node_list) {
+
+            // print neighbor info
+            updateOutput('\n' + Object.keys(node_list).length + ' neighbors:');
+            for (var ident in node_list)
+                updateOutput('ident: ' + ident + ' (' + node_list[ident].x + ', ' +
+                                                        node_list[ident].y + ', ' +
+                                                        node_list[ident].z + ')');
+        }
+
+        // callback when a message is received
+        var messageCallback = function (msg_list) {
+
+            // print out message list
+            for (var i=0; i < msg_list.length; i++) {
+                var msg = msg_list[i];
+                updateOutput(msg.ident + ': ' + msg.msg);
+            }
+        }
+
+        // callback when initialization is done
+        var doneCallback = function () {
+
+            node.publish({
+                pos: [self.x, self.y, 0]
+            },
+
+            // once done, perform subscribe nearby
+            function () {
+                // perform subscribe nearby
+                node.subscribe({
+                    radius:     self.radius
+                });
+            });
+        }
+
+        // create a GaiaSup node
+        var node = new GAIASUP.node();
+
+        // init with layer & node name
+        node.init(
+            {
+                APIhost:    "http://dev.imonology.com:3100/",
+                apikey:     "52249ae526761f994ed197e9ca415bf4d993134b",
+                layer:      "default",
+                name:       self.name,
+                pos_CB:     positionCallback,
+                msg_CB:     messageCallback
+            },
+            doneCallback
+        );
+    });
+
+// -->
+</script>
+</head>
+
+<body>
+<!-- output -->
+output:
+<textarea id="out_area" rows="20" cols="100">
+</textarea>
+<br />
+<!-- input -->
+input: <input id="in_area" type="text" value="" size="100" maxlength="100"/>
+
+</body>
+</html>

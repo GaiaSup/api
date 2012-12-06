@@ -1,0 +1,417 @@
+
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<script src="jquery-1.7.2.min.js" charset="utf-8"></script>
+<script type="text/javascript" src="GaiaSup.js"></script>
+<script type="text/javascript">
+<!--
+        
+    // 
+    //  drawing code
+    //
+    
+    var Demo = {
+    
+        // a list of edges to be drawn (each edge has 'a' and 'b' points, each point has 'x' & 'y')
+        edges: [],
+        
+        // a list of sites to be drawn
+        sites: [],
+                        
+        // where to draw
+        canvas: null,
+        
+        init: function () {
+            this.canvas = document.getElementById('guiCanvas');
+            //this.render();
+        },
+        
+        update: function (nodes, edges) {
+
+            // either update to new, or keep existing
+            this.edges = edges || this.edges;
+            this.sites = nodes || this.sites;
+        },
+                
+        render: function (self) {
+                
+			var ctx = this.canvas.getContext('2d');
+            
+			// background
+			ctx.globalAlpha = 1;
+
+			ctx.beginPath();
+			ctx.rect(0,0,this.canvas.width,this.canvas.height);
+			ctx.fillStyle = 'white';
+			ctx.fill();
+			ctx.strokeStyle = '#888';
+            ctx.lineWidth = 1;
+			ctx.stroke();
+						
+            // edges
+			ctx.beginPath();
+			ctx.strokeStyle='#000';
+			var edges = this.edges,
+				iEdge = edges.length,
+				edge, v;
+                
+			while (iEdge--) {
+				edge = edges[iEdge];
+				v = edge.a;
+				ctx.moveTo(v.x,v.y);
+				v = edge.b;
+				ctx.lineTo(v.x,v.y);
+			}            
+			ctx.stroke();
+             
+			// sites
+			ctx.beginPath();
+			ctx.fillStyle = '#44f';
+			var sites = this.sites,
+				iSite = sites.length;
+                
+			while (iSite--) {
+				v = sites[iSite];
+				ctx.rect(v.x-2/3,v.y-2/3,4,4);
+			}
+            ctx.fill();
+                                    
+            // draw self
+            ctx.beginPath();
+            ctx.fillStyle = 'red';
+            ctx.rect(self.x-2/3, self.y-2/3, 6, 6);
+            ctx.fill();
+
+            // draw AOI                
+            function circle(x,y,r) {
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI*2, true);
+                ctx.stroke();
+            }           
+            
+            circle(self.x, self.y, self.radius);            
+        }   
+    }; // end Demo
+            
+    // config
+    var bound = {x: 800, y: 600};
+    var TICK_INTERVAL = 500;
+    
+    // set initial position
+    var self = {x: Math.floor(Math.random() * bound.x), 
+                y: Math.floor(Math.random() * bound.y),
+                z: 0,
+                radius: 200,
+                name: "node" + new Date().getTime()};
+                                                     
+    // changes when move with events
+    var dx = 5;
+    var dy = 5;    
+    
+	//
+	// initialize GaiaSup Node
+	//
+    
+    // create a GaiaSup node 
+    var node = new GAIASUP.node();
+        
+    // list of current neighbors
+    var neighbors = {};
+    
+    // update neighbor positions
+    var positionCallback = function (node_list) {
+        
+        //console.log('pos callback');
+        // store list 
+        neighbors = node_list;
+        
+        var str = '';                                    
+        // convert to array form (to render)
+        var nodes = [];
+        for (var ident in neighbors) {
+            str += (ident + ' '); 
+            nodes.push({
+                x: neighbors[ident].x,
+                y: neighbors[ident].y,
+                z: neighbors[ident].z});
+        }
+        //console.log('neighbors: ' + str);
+        Demo.update(nodes);
+    }
+    
+    var messageCallback = function (msg_list) {
+    
+        // print out message list to console...
+        for (var i=0; i < msg_list.length; i++) {
+            var msg = msg_list[i];
+            console.log(msg.ident + ': ' + msg.msg);
+        }
+    }
+        
+	// init with layer & node name
+    node.init({
+            apikey:     "52249ae526761f994ed197e9ca415bf4d993134b",
+            layer:      "default",
+            name:       self.name,
+            pos_CB:     positionCallback,
+            msg_CB:     messageCallback            
+        },
+        
+        // actions perform when done
+        function () {
+        
+            node.publish({
+                pos: [self.x, self.y, 0]            
+            }, function () {
+            
+                // perform subscribe nearby
+                node.subscribe({            
+                    radius:     self.radius
+                }, 
+                function (result) {
+                    console.log('subscribe result: ' + result);
+                });
+            });            
+        }
+    );
+           
+    //
+    // actions & movements
+    //
+        
+    // previous position & interest (registered at server)
+    var aoi = {x: self.x, y: self.y, radius: self.radius};
+    
+    var tick = function () {
+
+        // check for position change
+        if (aoi.x != self.x || aoi.y != self.y) {
+        
+            aoi.x = self.x;
+            aoi.y = self.y;
+            console.log('move to ' + self.x + ', ' + self.y);
+            
+            // send position updates
+            node.publish({
+                pos: [self.x, self.y, 0]
+            });
+        }
+        
+        // check for subscription radius change
+        if (aoi.radius != self.radius) {
+            aoi.radius = self.radius;
+            console.log('radius update to ' + self.radius);
+            
+            node.subscribe({
+                radius: self.radius
+            });
+        }
+
+        // redraw
+        Demo.render(self);
+    }
+        
+    // start ticking
+    setInterval(tick, TICK_INTERVAL);    
+        
+    //
+    // User Interaction / Page Manipulation code
+    //
+    
+    // mouse position detection & drawing  
+    Element.prototype.leftTopScreen = function () {
+        var x = this.offsetLeft;
+        var y = this.offsetTop;
+       
+        return new Array (x, y);
+    }
+    
+    // perform action only after page is loaded
+    document.addEventListener ("DOMContentLoaded", function () {
+    
+        var canvas = document.getElementById ("guiCanvas");
+
+        // reference to display position
+        var pos_x      = document.getElementById("pos_x");
+        var pos_y      = document.getElementById("pos_y");
+        var mouse_x    = document.getElementById("mouse_x");
+        var mouse_y    = document.getElementById("mouse_y");
+        var node_name  = document.getElementById("node_name");
+        var aoi_radius = document.getElementById ("aoi_radius");
+        
+        // set initial values                
+        aoi_radius.value = self.radius;
+        node_name.value = self.name;
+        
+        var xy = canvas.leftTopScreen ();
+
+        var context = canvas.getContext ("2d");
+
+        context.fillStyle = "rgb(255,255,255)";   
+        context.fillRect (0, 0, 500, 500);
+        
+        // reflect change in parameters to display
+        function updateFields(position, mouse, radius) {
+            // update coordinates
+            if (position !== undefined) {
+                pos_x.value = position.x;
+                pos_y.value = position.y;
+            }
+            
+            if (mouse !== undefined) {
+                mouse_x.value = mouse.x;
+                mouse_y.value = mouse.y;
+            }
+            
+            // update radius value
+            if (radius !== undefined) {
+                aoi_radius.value = self.radius;
+            }
+            
+            Demo.render(self);
+        }
+        
+        function doKeyDown(evt){
+        
+            //console.log('key: ' + evt.keyCode);
+            switch (evt.keyCode) {
+                case 38:  /* Up arrow was pressed */  	
+                case 87:
+                    if (self.y - dy > 0){ 
+                        self.y -= dy;
+                    }
+                    break;
+                case 40:  /* Down arrow was pressed */
+                case 83:
+            		if (self.y + dy < bound.y){ 
+                        self.y += dy;
+                    }
+                    break;
+                case 37:  /* Left arrow was pressed */
+                case 65:
+            		if (self.x - dx > 0){ 
+                        self.x -= dx;
+                    }
+                    break;
+                case 39:  /* Right arrow was pressed */
+                case 68:
+            		if (self.x + dx < bound.x){ 
+                        self.x += dx;
+                    }
+                    break;
+                    
+                default:
+                    // do nothing
+                    return;
+                    
+            }   
+            updateFields(self);
+        }
+              
+        // obtain keyboard events
+        window.addEventListener("keydown", doKeyDown, true);
+                            
+        // re-obtain origin point
+        canvas.addEventListener ("mouseover", function (event) {
+            xy = canvas.leftTopScreen ();            
+        });
+
+        canvas.addEventListener ("mousemove", function (event) {
+            
+            var x, y;
+            
+            if (event.offsetX) {
+                x = event.offsetX;
+                y = event.offsetY;
+            }
+            else if (event.layerX) {
+                x = event.layerX;
+                y = event.layerY;
+            }
+            
+            // get adjusted x & y coordinates            
+            x = x - xy[0];
+            y = y - xy[1];
+            
+            updateFields(undefined, {x: x, y: y});
+            
+            // draw dot at current position
+            //context.fillStyle = "rgb(255, 0, 0)";  
+            //context.fillRect(x, y, 5, 5);                       
+        });
+        
+        function handle(delta) {
+            self.radius += delta;
+            
+            if (self.radius < 50)
+                self.radius = 50;
+                
+            updateFields(undefined, undefined, self.radius);
+        }        
+
+        // mouse wheel handling 
+        // src: http://www.adomas.org/javascript-mouse-wheel/
+        function wheel(event){
+        
+            var delta = 0;
+            if (!event) /* For IE. */
+                    event = canvas.event;
+            if (event.wheelDelta) { /* IE/Opera. */
+                    delta = event.wheelDelta/120;
+            } else if (event.detail) { /** Mozilla case. */
+                    /** In Mozilla, sign of delta is different than in IE.
+                     * Also, delta is multiple of 3.
+                     */
+                    delta = -event.detail/3;
+            }
+            /** If delta is nonzero, handle it.
+             * Basically, delta is now positive if wheel was scrolled up,
+             * and negative, if wheel was scrolled down.
+             */
+            if (delta)
+                    handle(delta);
+            /** Prevent default actions caused by mouse wheel.
+             * That might be ugly, but we handle scrolls somehow
+             * anyway, so don't bother here..
+             */
+            if (event.preventDefault)
+                event.preventDefault();
+                    
+            event.returnValue = false;
+        }
+        
+        canvas.addEventListener('DOMMouseScroll', wheel, false);
+        
+        /** Initialization code. 
+        * If you use your own event management code, change it as required.
+        */
+        if (canvas.addEventListener)
+            /** DOMMouseScroll is for mozilla. */
+            canvas.addEventListener('DOMMouseScroll', wheel, false);
+        else        
+            /** IE/Opera. */
+            canvas.onmousewheel = document.onmousewheel = wheel;      
+    });    
+               
+// -->
+</script>
+
+</head>
+
+<body onload="Demo.init();">
+name: <input id="node_name" type="text" value="" size="20" maxlength="20"/>
+x: <input id="pos_x" type="text" value="" size="4" maxlength="5"/>
+y: <input id="pos_y" type="text" value="" size="4" maxlength="5"/>
+radius: <input id="aoi_radius" type="text" value="100" size="4" maxlength="5"/>
+<br />
+mouse_x: <input id="mouse_x" type="text" value="" size="4" maxlength="5"/>
+mouse_y: <input id="mouse_y" type="text" value="" size="4" maxlength="5"/>
+<br />
+<noscript>You need to enable Javascript in your browser for this page to display properly.</noscript>
+<canvas id="guiCanvas" width="800" height="600" onclick=""></canvas>
+
+</body>
+
+</html>
