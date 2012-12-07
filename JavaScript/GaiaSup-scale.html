@@ -1,0 +1,169 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<script src="jquery-1.7.2.min.js" charset="utf-8"></script>
+<!-- <script type="text/javascript" src="https://raw.github.com/GaiaSup/api/master/JavaScript/GaiaSup.js"></script> -->
+<script type="text/javascript" src="GaiaSup.js"></script>
+<script type="text/javascript" src="point2d.js"></script>
+<script type="text/javascript" src="move_cluster.js"></script>
+
+<script type="text/javascript">
+<!--
+/*
+    scalability demo for GaiaSup
+
+    2012-12-07 init (adopted from test_von_scale.js)
+*/
+
+//
+// flags
+//
+
+// boundary of the test dimensions
+var bound = {x: 800, y: 600};
+var tick_interval   = 500;
+var node_speed      = 5;
+var node_radius     = 200;
+    
+// nodes to create
+var node_size = 50;
+
+// initialize movement model
+var movement = new clusterMovement({x:0, y:0}, bound, node_size, node_speed);
+movement.init();
+
+// a GaiaNode unit 
+var GaiaNode = function (num, radius) {
+
+    // current position
+    var pos = movement.getpos(num-1);
+    var node_name = "node_" + num;
+                        
+    // callback when neighbor positions are updated
+    var positionCallback = function (node_list) {
+        
+        // print neighbor info
+        console.log('\n' + Object.keys(node_list).length + ' neighbors:');
+        for (var ident in node_list)
+            console.log('ident: ' + ident + ' (' + node_list[ident].x + ', ' + 
+                                                    node_list[ident].y + ', ' + 
+                                                    node_list[ident].z + ')');
+    }
+    
+    // callback when a message is received
+    var messageCallback = function (msg_list) {
+    
+        // print out message list
+        for (var i=0; i < msg_list.length; i++) {
+            var msg = msg_list[i];
+            console.log(msg.ident + ': ' + msg.msg);
+        }
+    }
+
+    // perform movement
+    var moveNode = function () {
+        
+        pos = movement.getpos(num-1);        
+        
+        // can be an input
+        //console.log('node num: ' + num + ' moves to (' + pos.x + ', ' + pos.y + ')');
+        
+        node.publish({
+            pos: [pos.x, pos.y, 0]            
+        });
+    }           
+       
+    // callback when initialization is done
+    var doneCallback = function () {
+
+        console.log('[' + node_name + '] joins successfully');                
+        setInterval(moveNode, tick_interval);       
+    }
+    
+    // create a GaiaSup node 
+    var node = new GAIASUP.node();
+    
+    // init with layer & node name
+    node.init(
+        {
+            apikey:     "52249ae526761f994ed197e9ca415bf4d993134b",
+            layer:      "default",
+            name:       node_name,
+            pos_CB:     positionCallback,
+            msg_CB:     messageCallback
+        },           
+        doneCallback
+    );                               
+}
+
+var nodes_created = 0;
+
+// records of all nodes created so far
+var nodes = [];
+
+// create nodes
+var createNode = function () {
+
+    nodes_created++;
+    console.log('creating node [' + nodes_created + ']');
+            
+    var node = new GaiaNode(nodes_created, node_radius);    
+    nodes.push(node);
+    
+    // see if we want to create more
+    if (nodes_created < node_size)
+        setTimeout(createNode, 500);
+}
+
+console.log('creating ' + node_size + ' nodes');
+
+// create first node
+createNode();
+
+// keep moving
+setInterval(function () {
+    movement.move();
+}, tick_interval);
+
+    
+    // perform action only after page is loaded
+    document.addEventListener("DOMContentLoaded", function () {
+    
+        //
+        // User Interaction / Page Manipulation code
+        //    
+    
+        // reference to input/output fields
+        var in_area  = document.getElementById("in_area");
+        var out_area = document.getElementById("out_area");
+        
+        // update input field with a node info
+        function updateInput (msg) {
+            in_area.value = msg;
+        }
+        
+        // update output field with a message
+        function updateOutput (msg) {
+            out_area.value += (msg + '\n')
+            out_area.scrollTop = out_area.scrollHeight; 
+        }        
+                
+    });        
+
+
+// -->
+</script>
+</head>
+
+<body>
+<!-- output -->
+output:
+<textarea id="out_area" rows="20" cols="100">
+</textarea> 
+<br />
+<!-- input -->
+input: <input id="in_area" type="text" value="" size="100" maxlength="100"/>
+
+</body>
+</html>

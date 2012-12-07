@@ -49,7 +49,7 @@ GAIASUP.node = function () {
     var _apikey = this.apikey = undefined;
     var _layer = this.layer = undefined;
     var _name  = this.name  = undefined;    	
-    var _APIhost = "http://dev.imonology.com:81/";              // API server's hostname
+    var _APIhost = "http://api.gaiasup.com/";              // API server's hostname
             
     //
     // prviate variables
@@ -117,10 +117,10 @@ GAIASUP.node = function () {
         
         // perform registeration of layer & node
         l_registerLayer(info.layer, function () {
-            console.log('register layer done');
+            //console.log('register layer done');
             l_registerNode(info.name, function () {
             
-                console.log('register node done');
+                //console.log('register node done');
                 done_CB();
             });        
         });
@@ -178,7 +178,7 @@ GAIASUP.node = function () {
         
         // case 1: point publication (send a message at a position but do not change node position
         if (typeof para.pos !== 'undefined' && typeof para.msg !== 'undefined') {
-            console.log('point publication..');
+            //console.log('point publication..');
             done_CB();
             return;
         }
@@ -203,11 +203,10 @@ GAIASUP.node = function () {
         
         // case 3: message publication
         if (typeof para.msg !== 'undefined') {
-            console.log('publish message..'); 
+            //console.log('publish message..'); 
             done_CB();
             return;
-        }
-        
+        }        
     }
     
     // output method
@@ -270,7 +269,6 @@ GAIASUP.node = function () {
         l_HTTP("POST", url, obj, 
             function (data){
                 // TODO: check response
-                console.log('register layer success called');
                 _layer = layer;
                 onDone();
             }
@@ -311,7 +309,7 @@ GAIASUP.node = function () {
                 
                 // build shortcut
                 _ident = _apikey + ':' + _layer + ':' + _name;
-                console.log('register node called, ident: ' + _ident);
+                //console.log('register node called, ident: ' + _ident);
                 onDone(_ident); 
             }
         );        

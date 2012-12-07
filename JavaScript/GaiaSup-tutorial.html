@@ -20,12 +20,15 @@
     var delta = 5; 
                                 
     // set info about current node
-    var self = {x:      Math.floor(Math.random() * bound.x), 
-                y:      Math.floor(Math.random() * bound.y),
-                radius: 200,
-                name:   "node_" + Math.floor(Math.random() * 10000)};
+    var self = 
+        {
+            x:      Math.floor(Math.random() * bound.x), 
+            y:      Math.floor(Math.random() * bound.y),
+            radius: 200,
+            name:   "node_" + Math.floor(Math.random() * 10000)
+        };
                               
-    // perform action only after page is loaded
+    // perform actions only after page is loaded
     document.addEventListener ("DOMContentLoaded", function () {
     
         //
