@@ -657,8 +657,8 @@ GAIASUP.create = function () {
 // check the existence of a node
 GAIASUP.existNode = function (ident, onDone) {
 
-    if (_ident === undefined)
-        return onDone('node not yet registered');
+    if (ident === undefined)
+        return onDone('error', 'ident is not specified');
             
     var url = _APIhost + 'node/' + ident + '/exist';
     
