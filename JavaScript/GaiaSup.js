@@ -9,30 +9,43 @@
 window.GAIASUP = window.GAIASUP || {};
 (function () {
 
-    // 
-    // helper methods
-    //
+//
+//  Config
+//
+
+// API server's hostname
+var l_APIhost = "http://api.gaiasup.com/";              
+
+// how long a query request is made after subscribed (in millisecond)
+var l_defaultQueryInterval = 1000;
+
+// default subscribe nearby radius
+var l_queryRadius = 500;
+
+// 
+// helper methods
+//
+
+var l_HTTP = function (type, url, obj, onDone, onFail) {
+
+    // TODO: check if dataType should be "json"       
+    var request = {			
+        type: type,
+        url: url,
+        dataType: "json",
+        crossDomain: true,
+        xhrFields: {
+            withCredentials: true
+        },                        
+        success: onDone,
+        error: onFail
+    };
     
-    var l_HTTP = function (type, url, obj, onDone, onFail) {
-    
-        // TODO: check if dataType should be "json"       
-        var request = {			
-            type: type,
-            url: url,
-            dataType: "json",
-            crossDomain: true,
-            xhrFields: {
-                withCredentials: true
-            },                        
-            success: onDone,
-            error: onFail
-        };
+    if (obj !== undefined)
+        request.data = JSON.stringify(obj);
         
-        if (obj !== undefined)
-            request.data = JSON.stringify(obj);
-            
-        $.ajax(request);
-    }
+    $.ajax(request);
+}
 
 
 // define a position object
@@ -75,8 +88,7 @@ GAIASUP.node = function () {
     var _apikey = this.apikey = undefined;
     var _layer = this.layer = undefined;
     var _name  = this.name  = undefined;    	
-    var _APIhost = "http://api.gaiasup.com/";              // API server's hostname
-            
+    
     //
     // prviate variables
     //
@@ -97,10 +109,10 @@ GAIASUP.node = function () {
     var _pos = new GAIASUP.position();   
 
     // interval to query for nearby neighbors
-    var _queryInterval = 1000;
+    var _queryInterval = l_defaultQueryInterval;
     
     // query radius (for subscribeNearby)
-    var _queryRadius = 500;		
+    var _queryRadius = l_queryRadius;
     
     // periodic query interval ID
     // TODO: remove this? (change to long-polling)
@@ -139,7 +151,7 @@ GAIASUP.node = function () {
 
         // store optional API host, if available
         if (info.hasOwnProperty('APIhost') === true)
-            _APIhost = info.APIhost;
+            l_APIhost = info.APIhost;
         
         // perform registeration of layer & node
         l_registerLayer(info.layer, function () {
@@ -258,7 +270,7 @@ GAIASUP.node = function () {
     // register the layer to be used for this gaiaNode
     var l_registerLayer = this.registerLayer = function (layer, onDone) {
                 
-        var url = _APIhost + 'apikey/' + _apikey + '/layers';
+        var url = l_APIhost + 'apikey/' + _apikey + '/layers';
                               
         var obj = [];
         obj.push(layer);
@@ -280,7 +292,7 @@ GAIASUP.node = function () {
             return;
         }
         
-        var url = _APIhost + 'layer/' + _apikey + ':' + _layer;
+        var url = l_APIhost + 'layer/' + _apikey + ':' + _layer;
                
         l_HTTP("DELETE", url, undefined, 
             function (data) {
@@ -294,7 +306,7 @@ GAIASUP.node = function () {
     // register a new node with the service
     var l_registerNode = this.registerNode = function (name, onDone) {
         
-        var url = _APIhost + 'layer/' + _apikey + ':' + _layer + '/nodes';
+        var url = l_APIhost + 'layer/' + _apikey + ':' + _layer + '/nodes';
                                            
         var obj = [];
         obj.push(name);
@@ -315,7 +327,7 @@ GAIASUP.node = function () {
     // update the meta data info for a node
     var l_updateNode = this.updateNode = function (info, onDone) {
         
-        var url = _APIhost + 'node/' + _ident;
+        var url = l_APIhost + 'node/' + _ident;
                                            
         //var obj = [];
         //obj.push(info);
@@ -332,7 +344,7 @@ GAIASUP.node = function () {
     // get node metadata
     var l_getNode = this.getNode = function (onDone) {
         
-        var url = _APIhost + 'node/' + _ident;
+        var url = l_APIhost + 'node/' + _ident;
                                                    
         l_HTTP("GET", url, undefined, 
             function (data){
@@ -347,7 +359,7 @@ GAIASUP.node = function () {
         if (_ident === undefined)
             return onDone('node not yet registered');
                 
-        var url = _APIhost + 'node/' + _ident;
+        var url = l_APIhost + 'node/' + _ident;
         
         l_HTTP("DELETE", url, undefined, 
             function (data){
@@ -361,7 +373,7 @@ GAIASUP.node = function () {
     // get a list of subscribers for a node
     var l_getNodeSubscribers = this.getNodeSubscribers = function (onDone) {
         
-        var url = _APIhost + 'node/' + _ident + '/subscribers';
+        var url = l_APIhost + 'node/' + _ident + '/subscribers';
                                                    
         l_HTTP("GET", url, undefined, 
             function (data){
@@ -374,7 +386,7 @@ GAIASUP.node = function () {
     // subscribe updates from a particular node
     var l_subscribeNode = this.subscribeNode = function (ident, onDone) {
         
-        var url = _APIhost + 'node/' + ident + '/subscribers';
+        var url = l_APIhost + 'node/' + ident + '/subscribers';
         
         // NOTE: we're adding self to the node-to-be-subscribed's subscriber list        
         var obj = [];
@@ -391,7 +403,7 @@ GAIASUP.node = function () {
     // subscribe updates from a particular node
     var l_unsubscribeNode = this.unsubscribeNode = function (ident, onDone) {
         
-        var url = _APIhost + 'node/' + ident + '/subscribers/' + _ident;
+        var url = l_APIhost + 'node/' + ident + '/subscribers/' + _ident;
                 
         l_HTTP("DELETE", url, undefined, 
             function (data){
@@ -410,7 +422,7 @@ GAIASUP.node = function () {
             return onDone([]);
         }
     
-        var url = _APIhost + "spatial/cube/" + _ident + '/' + xmin + "," + ymin + "," + zmin + "," + xmax + "," + ymax + "," + zmax + '/nodes';
+        var url = l_APIhost + "spatial/cube/" + _ident + '/' + xmin + "," + ymin + "," + zmin + "," + xmax + "," + ymax + "," + zmax + '/nodes';
                            
         l_HTTP("GET", url, undefined, 
             function (data){
@@ -440,7 +452,7 @@ GAIASUP.node = function () {
             return;
         }
         
-        var url = _APIhost + 'spatial/nearby/' + _ident + '/' + radius + '/subscribers';
+        var url = l_APIhost + 'spatial/nearby/' + _ident + '/' + radius + '/subscribers';
         
         // NOTE: necessary to pass in self ident? 
         var obj = [];
@@ -470,7 +482,7 @@ GAIASUP.node = function () {
             return;        
         }
         
-        var url = _APIhost + 'spatial/nearby/' + _ident + '/' + _radius + '/subscribers';
+        var url = l_APIhost + 'spatial/nearby/' + _ident + '/' + _radius + '/subscribers';
                 
         l_HTTP("DELETE", url, undefined, 
             function (data){
@@ -489,7 +501,7 @@ GAIASUP.node = function () {
             return;
         }
                 
-        var url = _APIhost + "msg/send/";
+        var url = l_APIhost + "msg/send/";
 
         // prepare targets
         var targets = [];
@@ -541,7 +553,7 @@ GAIASUP.node = function () {
             return;
         }
                 
-        var url = _APIhost + "msg/recv/";
+        var url = l_APIhost + "msg/recv/";
         //alert('register node: ' + url);        
         $.ajax({ 
             type: "GET",
@@ -576,7 +588,7 @@ GAIASUP.node = function () {
             return;
         }
                 
-        var url = _APIhost + "query/msg/" + _apikey + "/" + _layer + "/" + _id + "/" + msg_size;
+        var url = l_APIhost + "query/msg/" + _apikey + "/" + _layer + "/" + _id + "/" + msg_size;
         //alert('register node: ' + url);        
         $.ajax({ 
             type: "GET",
@@ -660,7 +672,7 @@ GAIASUP.existNode = function (ident, onDone) {
     if (ident === undefined)
         return onDone('error', 'ident is not specified');
             
-    var url = _APIhost + 'node/' + ident + '/exist';
+    var url = l_APIhost + 'node/' + ident + '/exist';
     
     l_HTTP("GET", url, undefined, 
         function (data){
