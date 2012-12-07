@@ -9,6 +9,32 @@
 window.GAIASUP = window.GAIASUP || {};
 (function () {
 
+    // 
+    // helper methods
+    //
+    
+    var l_HTTP = function (type, url, obj, onDone, onFail) {
+    
+        // TODO: check if dataType should be "json"       
+        var request = {			
+            type: type,
+            url: url,
+            dataType: "json",
+            crossDomain: true,
+            xhrFields: {
+                withCredentials: true
+            },                        
+            success: onDone,
+            error: onFail
+        };
+        
+        if (obj !== undefined)
+            request.data = JSON.stringify(obj);
+            
+        $.ajax(request);
+    }
+
+
 // define a position object
 GAIASUP.position = function (x, y, z) {
 
@@ -224,36 +250,7 @@ GAIASUP.node = function () {
     this.getNeighbors = function () {
         return _neighbors;
     }
-                    
-    //
-    // private variables
-    //    	
-
-    // 
-    // helper methods
-    //
-    
-    var l_HTTP = function (type, url, obj, onDone, onFail) {
-    
-        // TODO: check if dataType should be "json"       
-        var request = {			
-            type: type,
-            url: url,
-            dataType: "json",
-            crossDomain: true,
-            xhrFields: {
-                withCredentials: true
-            },                        
-            success: onDone,
-            error: onFail
-        };
-        
-        if (obj !== undefined)
-            request.data = JSON.stringify(obj);
-            
-        $.ajax(request);
-    }
-            
+                               
     //
     // API methods (one-to-one mapping to backend API)
     //       
@@ -360,23 +357,7 @@ GAIASUP.node = function () {
             }
         );     
     }
-    
-    // check the existence of a node
-    var l_existNode = this.existNode = function (onDone) {
-    
-        if (_ident === undefined)
-            return onDone('node not yet registered');
-                
-        var url = _APIhost + 'node/' + _ident + '/exist';
         
-        l_HTTP("GET", url, undefined, 
-            function (data){
-                // return result of existence check, plus potential error
-                onDone(data[0], data[1]);
-            }
-        );     
-    }    
-    
     // get a list of subscribers for a node
     var l_getNodeSubscribers = this.getNodeSubscribers = function (onDone) {
         
@@ -499,8 +480,7 @@ GAIASUP.node = function () {
     }	         
         
         
-    /*        
-       
+    /*               
     // send message
     this.sendMessage = function (msg, onDone) {
             
@@ -673,5 +653,22 @@ GAIASUP.node = function () {
 GAIASUP.create = function () {
     return new GAIASUP.node();
 } // end of create    
+
+// check the existence of a node
+GAIASUP.existNode = function (ident, onDone) {
+
+    if (_ident === undefined)
+        return onDone('node not yet registered');
+            
+    var url = _APIhost + 'node/' + ident + '/exist';
+    
+    l_HTTP("GET", url, undefined, 
+        function (data){
+            // return result of existence check, plus potential error
+            onDone(data[0], data[1]);
+        }
+    );     
+}    
+
     
 })();
