@@ -441,11 +441,11 @@ GAIASUP.node = function () {
                 // go through each item & update neighbor list
                 $.each(data[0], function (idx, msg) {                    
                 
-                    //console.log(idx + ': ' + msg.ident + ' ' + msg.x + ' ' + msg.y + ' ' + msg.z);
+                    //console.log(idx + ': ' + msg.ident + ' ' + msg.loc.x + ' ' + msg.loc.y + ' ' + msg.loc.z);
                     // store this neighbor
                     nodes.push(msg);                    
                 });
-                                 
+                               
                 // notify callback of new neighbors if callback exists
                 onDone(nodes, data[1]);            
             }
@@ -633,25 +633,38 @@ GAIASUP.node = function () {
                 
                 //console.log('neighbor size: ' + Object.keys(neighbors).length);
                 // update to neighbor list                
-                _neighbors = {};
+                var updated_list = {};
+                var updated = false;
                 
                 for (var i=0; i < nodes.length; i++) {
 
-                    var node = nodes[i];
-                    
+                    var node = new GAIASUP.position(
+                        nodes[i].loc[0],
+                        nodes[i].loc[1],
+                        nodes[i].loc[2]);
+                                        
                     // filter out of radius neighbors 
-                    if (_pos.distance(node) < _queryRadius) {
+                    if (_pos.distance(node) > _queryRadius)
+                        continue;
+                        
+                    node.ident = nodes[i].ident;
+                    updated_list[node.ident] = node;
                     
-                        // TODO: need to parse? 
-                        _neighbors[node.ident] = {
-                            x: parseInt(node.x),
-                            y: parseInt(node.y),
-                            z: parseInt(node.z)
-                        };                 
+                    // check if this is new or changed neighbor
+                    if (_neighbors.hasOwnProperty(node.ident)) {
+                        if (_neighbors[node.ident].equals(node))
+                            continue;
                     }
+                    updated = true;
                 }
-                                
-                if (typeof _pos_CB === 'function')
+                
+                if (Object.keys(_neighbors).length !== Object.keys(updated_list).length)
+                    updated = true;
+                               
+                _neighbors = updated_list;
+                
+                // only notify if neighbors have updated in some way               
+                if (updated && typeof _pos_CB === 'function')
                     _pos_CB(_neighbors);
             }
         );

@@ -5,14 +5,37 @@
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <script src="jquery-1.7.2.min.js" charset="utf-8"></script>
 <script type="text/javascript" src="https://raw.github.com/GaiaSup/api/master/JavaScript/GaiaSup.js"></script>
+<!-- <script type="text/javascript" src="GaiaSup.js"></script>-->
 <script type="text/javascript">
 <!--
+
+    //
+    // config
+    //
+    
+    var bound = {x: 800, y: 600};
+    var TICK_INTERVAL = 500;
+    
+    // set initial position
+    var self = {x: Math.floor(Math.random() * bound.x), 
+                y: Math.floor(Math.random() * bound.y),
+                z: 0,
+                radius: 200,
+                name: "node_" + Math.floor(Math.random() * 10000),
+                color: Math.floor(Math.random() * 5)};
+                                                     
+    // changes when move with events
+    var dx = 5;
+    var dy = 5;    
         
     // 
     //  drawing code
     //
     
     var Demo = {
+    
+        // possible node colors
+        colors: ['red', 'green', 'orange', 'purple', 'yellow'],
     
         // a list of edges to be drawn (each edge has 'a' and 'b' points, each point has 'x' & 'y')
         edges: [],
@@ -80,7 +103,7 @@
                                     
             // draw self
             ctx.beginPath();
-            ctx.fillStyle = 'red';
+            ctx.fillStyle = this.colors[self.color];
             ctx.rect(self.x-2/3, self.y-2/3, 6, 6);
             ctx.fill();
 
@@ -94,22 +117,7 @@
             circle(self.x, self.y, self.radius);            
         }   
     }; // end Demo
-            
-    // config
-    var bound = {x: 800, y: 600};
-    var TICK_INTERVAL = 500;
-    
-    // set initial position
-    var self = {x: Math.floor(Math.random() * bound.x), 
-                y: Math.floor(Math.random() * bound.y),
-                z: 0,
-                radius: 200,
-                name: "node" + new Date().getTime()};
-                                                     
-    // changes when move with events
-    var dx = 5;
-    var dy = 5;    
-    
+                
 	//
 	// initialize GaiaSup Node
 	//
@@ -132,10 +140,7 @@
         var nodes = [];
         for (var ident in neighbors) {
             str += (ident + ' '); 
-            nodes.push({
-                x: neighbors[ident].x,
-                y: neighbors[ident].y,
-                z: neighbors[ident].z});
+            nodes.push(neighbors[ident]);
         }
         //console.log('neighbors: ' + str);
         Demo.update(nodes);
@@ -335,11 +340,7 @@
             x = x - xy[0];
             y = y - xy[1];
             
-            updateFields(undefined, {x: x, y: y});
-            
-            // draw dot at current position
-            //context.fillStyle = "rgb(255, 0, 0)";  
-            //context.fillRect(x, y, 5, 5);                       
+            updateFields(undefined, {x: x, y: y});                       
         });
         
         function handle(delta) {

@@ -5,6 +5,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <script src="jquery-1.7.2.min.js" charset="utf-8"></script>
 <script type="text/javascript" src="https://raw.github.com/GaiaSup/api/master/JavaScript/GaiaSup.js"></script>
+<!-- <script type="text/javascript" src="GaiaSup.js"></script>-->
 <script type="text/javascript">
 <!--        
 
@@ -22,7 +23,7 @@
     var self = {x:      Math.floor(Math.random() * bound.x), 
                 y:      Math.floor(Math.random() * bound.y),
                 radius: 200,
-                name:   "node_" + new Date().getTime()};
+                name:   "node_" + Math.floor(Math.random() * 10000)};
                               
     // perform action only after page is loaded
     document.addEventListener ("DOMContentLoaded", function () {
@@ -60,17 +61,17 @@
                     break;
                 // Down arrow was pressed 
                 case 40:  
-            		if (self.y + delta < bound.y)
+                    if (self.y + delta < bound.y)
                         self.y += delta;
                     break;
                 // Left arrow was pressed 
                 case 37:  
-            		if (self.x - delta > 0)
+                    if (self.x - delta > 0)
                         self.x -= delta;
                     break;
                 // Right arrow was pressed
                 case 39:  
-            		if (self.x + delta < bound.x)
+                    if (self.x + delta < bound.x)
                         self.x += delta;
                     break;
                     
@@ -91,9 +92,9 @@
         // register for keyboard events
         window.addEventListener("keydown", doKeyDown, true);
 
-		//
-		// initialize GaiaSup Node
-		//
+        //
+        // initialize GaiaSup Node
+        //
                         
         // callback when neighbor positions are updated
         var positionCallback = function (node_list) {
@@ -135,7 +136,7 @@
         // create a GaiaSup node 
         var node = new GAIASUP.node();
         
-		// init with layer & node name
+        // init with layer & node name
         node.init(
             {
                 apikey:     "52249ae526761f994ed197e9ca415bf4d993134b",
