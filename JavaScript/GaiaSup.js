@@ -5,6 +5,7 @@
     Usage: please see API documentation        
 */
 
+
 // create the gaia container
 window.GAIASUP = window.GAIASUP || {};
 (function () {
@@ -29,7 +30,7 @@ var l_queryRadius = 500;
 var l_HTTP = function (type, url, obj, onDone, onFail) {
 
     // TODO: check if dataType should be "json"       
-    var request = {			
+    var request = {
         type: type,
         url: url,
         dataType: "json",
@@ -162,6 +163,11 @@ GAIASUP.node = function () {
                 done_CB();
             });        
         });
+    }
+    
+    // close down a node
+    this.shut = function (done_CB) {
+        l_revokeNode(done_CB);
     }
                   
     // subscribe area/nearby/cube/node
@@ -684,3 +690,5 @@ GAIASUP.existNode = function (ident, onDone) {
 
     
 })();
+
+

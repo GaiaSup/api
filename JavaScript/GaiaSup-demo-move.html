@@ -4,9 +4,10 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <script src="https://raw.github.com/GaiaSup/api/master/JavaScript/jquery-1.7.2.min.js" charset="utf-8"></script>
-<script type="text/javascript" src="https://raw.github.com/douglascrockford/JSON-js/master/json2.js"></script>
 <!-- <script type="text/javascript" src="https://raw.github.com/GaiaSup/api/master/JavaScript/GaiaSup.js"></script> -->
 <script type="text/javascript" src="GaiaSup.js"></script>
+<script type="text/javascript" src="point2d.js"></script>
+<script type="text/javascript" src="move_cluster.js"></script>
 <script type="text/javascript">
 <!--
 
@@ -60,10 +61,6 @@
         },
                 
         render: function (self) {
-                
-            // check if loaded
-            if (this.canvas == null)
-                return;
                 
 			var ctx = this.canvas.getContext('2d');
             
@@ -210,7 +207,7 @@
         
             aoi.x = self.x;
             aoi.y = self.y;
-            //console.log('move to ' + self.x + ', ' + self.y);
+            console.log('move to ' + self.x + ', ' + self.y);
             
             // send position updates
             node.publish({
@@ -239,7 +236,6 @@
     // User Interaction / Page Manipulation code
     //
     
-    // TODO: find IE-compilable method (Element is not defined)
     // mouse position detection & drawing  
     Element.prototype.leftTopScreen = function () {
         var x = this.offsetLeft;
@@ -335,10 +331,7 @@
             }   
             updateFields(self);
         }
-        
-        // update for 1st time
-        updateFields(self);
-                              
+              
         // obtain keyboard events
         window.addEventListener("keydown", doKeyDown, true);
                             
@@ -418,7 +411,6 @@
         else        
             /** IE/Opera. */
             canvas.onmousewheel = document.onmousewheel = wheel;      
-                        
     });    
                
 // -->
