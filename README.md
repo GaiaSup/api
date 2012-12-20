@@ -14,5 +14,9 @@ All official language bindings are offered under the MIT License
 (please see LICENSE file), and community bindings are offered under
 licenses chosen by the respective developers. 
 
+Currently, the following bindings are official:
+
+[JavaScript](https://github.com/GaiaSup/api/tree/master/JavaScript)
+
 Please note that the language bindings are not part of the services
 offered by GaiaSup, and we do not guarantee its performance or stability.
