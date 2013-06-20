@@ -3,9 +3,10 @@
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<script src="https://raw.github.com/GaiaSup/api/master/JavaScript/jquery-1.7.2.min.js" charset="utf-8"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 <script type="text/javascript" src="https://raw.github.com/douglascrockford/JSON-js/master/json2.js"></script>
-<!-- <script type="text/javascript" src="https://raw.github.com/GaiaSup/api/master/JavaScript/GaiaSup.js"></script> -->
+<!-- <script type="text/javaFscript" src="https://raw.github.com/GaiaSup/api/master/JavaScript/GaiaSup.js"></script> -->
+<script type="text/javascript" src="./socket.io/socket.io.js"></script>
 <script type="text/javascript" src="GaiaSup.js"></script>
 <script type="text/javascript">
 <!--
@@ -162,28 +163,32 @@
         
 	// init with layer & node name
     node.init({
-            apikey:     "1ac1c6b4cf2706aae4c9d71722ccde66a2572244",
+            //apikey:     "cf8a96da2212823038d41368e8ffeff02ee0a64f",       // prod
+            apikey:     "19064265062a2aa6051a83008dfe1c9975fdd1a5",         // dev
             layer:      "default",
+            
+            // BlueT test
+            //apikey:     "f4f9d743ffd51985ce86aab465a779a54872b520",         // dev
+            //layer:      "theWOWlayer",            
+            
             name:       self.name,
-            pos_CB:     positionCallback,
-            msg_CB:     messageCallback            
+            pos:        self,
+            onPosition: positionCallback,
+            onMessage:  messageCallback      
         },
         
         // actions perform when done
         function () {
-        
-            node.publish({
-                pos: [self.x, self.y, 0]            
-            }, function () {
-            
-                // perform subscribe nearby
-                node.subscribe({            
-                    radius:     self.radius
-                }, 
-                function (result) {
-                    console.log('subscribe result: ' + result);
-                });
-            });            
+                    
+            // perform subscribe nearby
+            node.subscribe({
+                radius:     self.radius
+            }, 
+            function (err, msg) {
+                console.log('subscribe result: ');
+                console.log(err);
+                //console.log(msg);
+            });       
         }
     );
     
@@ -192,7 +197,7 @@
         "beforeunload", 
         function() { 
             node.shut();
-            //return confirm("Do you really want to close?") 
+            return confirm("Do you really want to close?") 
         }
     )    
                
@@ -298,25 +303,25 @@
             //console.log('key: ' + evt.keyCode);
             switch (evt.keyCode) {
                 case 38:  /* Up arrow was pressed */  	
-                case 87:
+                case 87:  // w
                     if (self.y - dy > 0){ 
                         self.y -= dy;
                     }
                     break;
                 case 40:  /* Down arrow was pressed */
-                case 83:
+                case 83:  //s
             		if (self.y + dy < bound.y){ 
                         self.y += dy;
                     }
                     break;
                 case 37:  /* Left arrow was pressed */
-                case 65:
+                case 65:  //a
             		if (self.x - dx > 0){ 
                         self.x -= dx;
                     }
                     break;
                 case 39:  /* Right arrow was pressed */
-                case 68:
+                case 68:  //d
             		if (self.x + dx < bound.x){ 
                         self.x += dx;
                     }
@@ -324,6 +329,7 @@
                     
                 // quit
                 case 81:
+                    //alert('quit');                    
                     node.shut();
                     break;
                     

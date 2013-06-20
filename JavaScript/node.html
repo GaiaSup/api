@@ -1,0 +1,115 @@
+<!DOCTYPE html><html><head><link href="/stylesheets/style.css" rel="stylesheet"><script src="http://code.jquery.com/jquery-1.6.1.min.js"></script><script src="./socket.io/socket.io.js"></script><script>// socket.io specific code
+var socket = io.connect('http://dev.imonology.com:5000');
+
+socket.on('connect', function () {
+	//alert('connect');
+	$('#chat').addClass('connected');
+});
+
+
+
+socket.on('update', function (from, msg) {
+	message('update', 'update' + msg);
+	//$('#lines').append($('<p>').append($('<em>').text(msg)));
+	//$('#lines').append($('<p>').append($('<b>').text(from), msg));
+	
+});
+socket.on('left', function (from, msg) {
+	message('left', 'left' + msg);
+	
+});
+socket.on('entered', function (from, msg) {
+	message('entered', 'entered' + msg);
+	
+});
+socket.on('revoked', function (from, msg) {
+	message('revoked', 'revoked' + msg);
+	
+});
+
+socket.on('reconnect', function () {
+	//alert('reconnect');
+	//$('#lines').remove();
+	message('System', 'Reconnected to the server');
+	socket.emit('register', '2aba38af37b17c3d8aa2f22e51b5ca215797d966', 'theWOWlayer', $('#nick').val(), function (set) {
+		if (set) {
+			clear();
+			return $('#chat').addClass('nickname-set');
+		}
+		$('#nickname-err').css('visibility', 'visible');
+	});
+});
+
+socket.on('reconnecting', function () {
+	//alert('reconnecting');
+	message('System', 'Attempting to re-connect to the server');
+});
+
+socket.on('error', function (e) {
+	//alert('error');
+	message('System', e ? e : 'A unknown error occurred');
+});
+
+function message (from, msg) {
+	
+	//alert('message: ' + from + ' : ' + msg);
+	console.log('message: ' + from + ' : ' + JSON.stringify(msg));
+	$('#lines').append($('<p>').append($('<b>').text(from), msg));
+}
+
+// dom manipulation
+$(function () {
+	$('#set-nickname').submit(function (ev) {
+		//socket.emit('nickname', $('#nick').val(), function (set) {
+		//	if (!set) {
+		//		clear();
+		//		return $('#chat').addClass('nickname-set');
+		//	}
+		//	$('#nickname-err').css('visibility', 'visible');
+		//});
+		socket.emit('register', '2aba38af37b17c3d8aa2f22e51b5ca215797d966', 'theWOWlayer', $('#nick').val(), function (set) {
+			if (set) {
+				clear();
+				return $('#chat').addClass('nickname-set');
+			}
+			$('#nickname-err').css('visibility', 'visible');
+		});
+
+		return false;
+	});
+
+	$('#send-message').submit(function () {
+		message('me', $('#message').val());
+		socket.emit('user message', $('#message').val());
+		clear();
+		$('#lines').get(0).scrollTop = 10000000;
+		return false;
+	});
+	
+	$('#send-direct-message').submit(function () {
+		message('me', 'To ' + $('#direct-target').val() + ' : ' + $('#direct-message').val());
+		socket.emit('pushupdate', $('#direct-message').val(), $('#direct-target').val());
+		clear();
+		$('#lines').get(0).scrollTop = 10000000;
+		return false;
+	});
+
+	function clear () {
+		$('#message').val('').focus();
+	};
+});
+</script></head>
+<body>
+	<div id="chat">
+		<div id="nickname">
+			<form id="set-nickname" class="wrap"><p>Please type in your nickname and press enter.</p><input id="nick"><p id="nickname-err">Nickname already in use</p></form>
+		</div>
+		<div id="connecting"><div class="wrap">Connecting to socket.io server</div></div>
+	<div id="messages">
+		<div id="nicknames"></div><div id="lines"></div>
+	</div>
+<!--
+	<form id="send-message"><input id="message"><button>Send</button></form>
+	<form id="send-direct-message"><input id="direct-target"><input id="direct-message"><button>DirectSend</button></form></div>
+-->
+</body></html>
